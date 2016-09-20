@@ -1,4 +1,4 @@
-# circleci-artifetch
+# circleci-artifetch [![Build Status](https://travis-ci.org/genez/circleci-artifetch.svg?branch=master)](https://travis-ci.org/genez/circleci-artifetch)
 Artifact downloader for CircleCI Continuous Integration
 
 CircleCI has a nice REST API that can be used to retrieve artifacts.  
