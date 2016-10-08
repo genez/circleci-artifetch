@@ -21,7 +21,6 @@ type Artifact struct {
 	Url        string `json:"url"`
 }
 
-
 func main() {
 	vcs := flag.String("vcs", "", "CircleCI VCS Type")
 	user := flag.String("user", "", "CircleCI Organization Name")
@@ -31,14 +30,14 @@ func main() {
 	downloadFolder := flag.String("target", ".", "Target download folder")
 	flag.Parse()
 
-	if (*vcs == "" || *user == "" || *project == "" || *build == "") {
+	if *vcs == "" || *user == "" || *project == "" || *build == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	circleToken := os.Getenv("CIRCLE_CI_TOKEN")
 
-	if (circleToken == "") {
+	if circleToken == "" {
 		fmt.Print("CIRCLE_CI_TOKEN environment variable must be set")
 		os.Exit(2)
 	}
@@ -79,19 +78,30 @@ func downloadArtifacts(circleToken string, downloadFolder string, artifacts chan
 		go func() {
 			t := time.Now()
 
-			out, _ := os.Create(strings.Replace(file.PrettyPath, "$CIRCLE_ARTIFACTS", downloadFolder, 1))
-			defer out.Close()
+			out, err := os.Create(strings.Replace(file.PrettyPath, "$CIRCLE_ARTIFACTS", downloadFolder, 1))
+			if err != nil {
+				fmt.Println("download of ", file.PrettyPath, "into", downloadFolder, "failed: ", err.Error())
+			} else {
+				defer out.Close()
+			}
 
 			q := fmt.Sprintf("%s?circle-token=%s", file.Url, circleToken)
 
-			resp, _ := http.DefaultClient.Get(q)
-			defer resp.Body.Close()
+			resp, err := http.DefaultClient.Get(q)
+			if err != nil {
+				fmt.Println("download of ", file.PrettyPath, "into", downloadFolder, "failed: ", err.Error())
+			} else {
+				defer resp.Body.Close()
+			}
 
-			n, _ := io.Copy(out, resp.Body)
-			fmt.Println("file", file.PrettyPath, time.Since(t), n, "bytes")
+			n, err := io.Copy(out, resp.Body)
+			if err != nil {
+				fmt.Println("download of ", file.PrettyPath, "into", downloadFolder, "failed: ", err.Error())
+			} else {
+				fmt.Println("file", file.PrettyPath, time.Since(t), n, "bytes")
+			}
 
 			wg.Done()
 		}()
 	}
 }
-
